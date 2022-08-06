@@ -1,0 +1,108 @@
+function gmt_batch3imgtop(varargin)
+%
+% batch image plot by GMT
+% Created by Feng,W.P., @ GU, 2011/10/23
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+gmt_numfile  = 0;
+gmt_scalecof = 1;
+gmt_proj     = '-JM4i';
+gmt_aystep   = '0.25';
+gmt_axstep   = '0.25';
+gmt_demfile  = 'data.dem';
+gmt_xoff     = '0.2i';
+gmt_yoff     = '0.2i';
+gmt_isdelgrd = 0;
+gmt_outps    = 'test.ps';
+gmt_isov     = [];
+gmt_iscon    = 0;
+gmt_zinterv  = 3.14;
+gmt_vmin     = -3.145;
+gmt_vmax     =  3.145;
+gmt_vwrap    =  1;
+gmt_unit     = 'Unit(m)';
+gmt_mulvalue = [];
+gmt_snew     = 'snew';
+gmt_roi      = [];
+gmt_cptname  = [];
+%
+v = sim_varmag(varargin);
+for j = 1:length(v)
+    eval(v{j});
+end
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+if gmt_numfile == 0
+   return
+end
+files   = cell(1);
+grdfile = cell(1);
+for ni = 1:gmt_numfile
+  files{ni}   = eval(['gmt_file',num2str(ni)]); %   'geo_20101230-20110401_ENVI.phs';
+  [~,bname]   = fileparts(files{ni});
+  grdfile{ni} = [bname,'_grd.grd']; 
+end
+%
+dem     = gmt_demfile;                          % 'E:\TEMP\Burma110324\burma_srtm.img';
+demgrd  = 'dem_gmt.grd';                        % 
+%
+demroi  = [];
+for ni = 1:gmt_numfile
+    gmt_img2grd(files{ni},grdfile{ni},gmt_roi,'float',gmt_vwrap,gmt_vmin,gmt_vmax);
+    [demroi,~,~,~,~,wid,len] = gmt_grd2info(grdfile{ni});
+end
+%
+
+if isempty(demroi)==0 && isempty(gmt_roi)==0
+    demref = [demroi,wid,len];
+else
+    demref = grdfile{1};
+end
+%demref
+gmt_grd2cutdem(demref,dem,demgrd);
+%
+outps = gmt_outps;
+gmt_gmtset();
+%
+
+for ni = 1:gmt_numfile
+    if ni == 1 
+        temp_inov = gmt_iscon;
+    else
+        temp_inov = 1;
+    end
+    if ni == gmt_numfile
+        temp_outov = gmt_iscon;
+    else
+        temp_outov = 1;
+    end
+    if ni > 1
+       xoff = gmt_proj(4:end-1);
+       tgmt_xoff = [num2str(str2double(xoff)+str2double(gmt_xoff(1:end-1))),'i'];
+       tgmt_yoff = '0i';
+    else
+       tgmt_xoff = gmt_xoff;
+       tgmt_yoff = gmt_yoff;
+    end
+    if isempty(gmt_isov) == 0
+        temp_inov = gmt_isov;
+    end
+    %
+    gmt_grdimageadddem(grdfile{ni},...
+        'gmt_demgrd',demgrd,...
+        'gmt_proj',gmt_proj,...
+        'gmt_nanvalue',100,...
+        'gmt_scalecof',gmt_scalecof,...
+        'gmt_outps',outps,...
+        'gmt_isov',temp_inov,...
+        'gmt_iscon',temp_outov,...
+        'gmt_axstep',gmt_axstep,'gmt_aystep',gmt_aystep,...
+        'gmt_xoff',tgmt_xoff,    'gmt_yoff',tgmt_yoff,...
+        'gmt_zinterv',num2str(gmt_zinterv),'gmt_snew',gmt_snew,...
+        'gmt_mulvalue',gmt_mulvalue,'gmt_unit',gmt_unit,'gmt_cptname',gmt_cptname);
+    %
+end
+%
+if gmt_isdelgrd == 1
+   disp('Now all grd file will be deleted... Be careful...');
+   delete *.grd
+end

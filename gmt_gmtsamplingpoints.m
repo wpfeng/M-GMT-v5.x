@@ -1,0 +1,151 @@
+function gmt_gmtsamplingpoints(inpfile,polygon,varargin)
+%
+% Created by Feng,W.P, @ GU
+%
+% plot sampling points!
+%
+% inpfile = '../inp/geo_20101230-20110401_ENVI_RBASED_PHASE_LL.inp';
+% polygon = '../inp/geo_20101230-20110401_ENVI_RBASED_PHASE_LL.rb.box.xy';
+% %
+% inpfile = '../inp/geo_20110214-20110401-trendremove_ROI_RBASED_AZI_LL.inp';
+% polygon = '../inp/geo_20110214-20110401-trendremove_ROI_RBASED_AZI_LL.rb.box.xy';
+% %
+% inpfile = '../inp/geo_20110216-20110403_ENVI_roi_RBASED_PHASE_LL.inp';
+% polygon = '../inp/geo_20110216-20110403_ENVI_roi_RBASED_PHASE_LL.rb.box.xy';
+%
+%
+%
+gmt_linewide    = '0.02c';
+gmt_xoff        = '1i';
+gmt_yoff        = '1i';
+gmt_scaledir    = 'h';
+gmt_iscon       = 0;
+gmt_isov        = 0;
+gmt_color       = gmt_cptdb('seis');%'seis';
+gmt_proj        = ' -JM';
+gmt_xwid        = '2i';
+gmt_xstep       = '0.25';
+%
+gmt_lens        = '0.9i';
+gmt_scalexshift = '0.7i';
+gmt_scaleyshift = '0.35i';
+gmt_barhigh     = '0.1i';
+gmt_ystep       = '0.25';
+gmt_minv        =  -0.8;
+gmt_maxv        =  0.8;
+gmt_zinterv     = '0.3';
+gmt_unit        = 'm';
+gmt_snew        = 'SNEW';
+gmt_outps       = [];
+gmt_mregion     = [];
+gmt_background  = [];
+gmt_isfb        = ' ';
+gmt_titlesize   = '12';
+gmt_title       = '';
+gmt_istriangle  = '';
+gmt_psscale_background_fill     = '220/220/220';
+gmt_psscale_background_offset   = '0.01i';
+gmt_psscale_background_offset_l = [];
+gmt_psscale_background_offset_r = [];
+gmt_psscale_background_offset_t = [];
+gmt_psscale_background_offset_b = [];
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+v = sim_varmag(varargin);
+for j = 1:length(v)
+    eval(v{j});
+end
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+[bp,bn]    = fileparts(inpfile);
+outgmtfile = fullfile(bp,[bn,'.gmt.poly']);
+if isempty(gmt_outps)
+   gmt_outps  = fullfile(bp,[bn,'.gmt.ps']);
+end
+%
+inp     = sim_inputdata(inpfile);
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+minlon  = min(inp(:,1));
+minlat  = min(inp(:,2));
+maxlon  = max(inp(:,1));
+maxlat  = max(inp(:,2));
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+gmt_inpbox2file(polygon,inpfile,outgmtfile);
+%
+if isempty(gmt_mregion)
+  gmt_mregion = [' -R',num2str(minlon),'/',num2str(maxlon),'/',num2str(minlat),'/',num2str(maxlat)];
+end
+
+%
+gmt_cptname = 'color.cpt';
+if isempty(gmt_minv)
+    gmt_minv = min(inp(:,3));
+end
+if (isempty(gmt_maxv))
+    gmt_maxv = max(inp(:,3));
+end
+%
+gmt_colorcpt(gmt_minv,gmt_maxv,256,gmt_color,gmt_cptname);
+%
+gmt_psxy4polygon(outgmtfile,...
+    'gmt_outps', gmt_outps,...
+    'gmt_snew',  gmt_snew,...
+    'gmt_proj',  gmt_proj,...
+    'gmt_xwid',  gmt_xwid,...
+    'gmt_axoff', gmt_xstep,...
+    'gmt_xoff',  gmt_xoff,...
+    'gmt_yoff',  gmt_yoff,...
+    'gmt_linewide',gmt_linewide,...
+    'gmt_ayoff',   gmt_ystep,...
+    'gmt_mregion', gmt_mregion,...
+    'gmt_cptname', gmt_cptname,...
+    'gmt_isov',    gmt_isov,...
+    'gmt_iscon',1);
+%
+test = textscan(gmt_mregion,'%s','delimiter','/');
+minx = test{1}{1};
+minx = str2double(minx(3:end));
+maxx= test{1}{2};
+maxx = str2double(maxx);
+miny= test{1}{3};
+miny = str2double(miny);
+maxy= test{1}{4};
+maxy = str2double(maxy);
+%
+gmt_pstext(...
+    'text_x',num2str(minx+(maxx-minx)*0.01),...
+    'text_y',num2str(maxy-(maxy-miny)*0.07),...
+    'text_string',gmt_title,...
+    'text_backcolor','0/0/0',...
+    'text_fontcolor','255/255/255',...
+    'text_size','21',...gmt_titlesize,...
+    'text_outps',gmt_outps);
+nump = numel(inp(:,1));
+gmt_pstext(...
+    'text_x',num2str(maxx-(maxx-minx)*0.5),...
+    'text_y',num2str(miny+(maxy-miny)*0.05),...
+    'text_string',['Points: ',num2str(nump)],...
+    'text_backcolor','200/200/200',...
+    'text_size',gmt_titlesize,...
+    'text_outps',gmt_outps);
+%
+%gmt_colorcpt(min(inp(:,3)),max(inp(:,3)),5,gmt_color);
+gmt_psscale(...
+    'gmt_outps',gmt_outps,...
+    'gmt_isov',1,...
+    'gmt_iscon',     gmt_iscon,...
+    'gmt_xshift',    gmt_scalexshift,...
+    'gmt_yshift',    gmt_scaleyshift,...
+    'gmt_cptname',   gmt_cptname,...
+    'gmt_scaledir',  gmt_scaledir,...
+    'gmt_lens',      gmt_lens,...
+    'gmt_zinterv',   gmt_zinterv,...
+    'gmt_barhigh',   gmt_barhigh,...
+    'gmt_psscale_background_fill',gmt_psscale_background_fill,....= '255/255/255';
+    'gmt_psscale_background_offset',gmt_psscale_background_offset,.... = '0.01i';
+    'gmt_psscale_background_offset_l',gmt_psscale_background_offset_l,... = [];
+    'gmt_psscale_background_offset_r',gmt_psscale_background_offset_r,... = [];
+    'gmt_psscale_background_offset_t',gmt_psscale_background_offset_t,... = [];
+    'gmt_psscale_background_offset_b',gmt_psscale_background_offset_b,... = [];
+    'gmt_unit',      gmt_unit,...
+    'gmt_isfb',      gmt_isfb,...
+    'gmt_istriangle',gmt_istriangle,...
+    'gmt_background',gmt_background);

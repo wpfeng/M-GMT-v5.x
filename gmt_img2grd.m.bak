@@ -1,0 +1,62 @@
+function gmt_img2grd(fimages,outname,roi,format)
+%
+% convert imagefile into grd file for gmt mapping
+% Modification History:
+% Created by Feng, W.P., 2011-08-31, @ BJ
+%
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+if nargin < 4
+   format = 'integer';
+end
+if nargin < 2 || isempty(outname)
+   [bpath,bname] = fileparts(fimages);
+   outname = fullfile(bpath,[bname,'.grd']);
+end
+%
+[rscname,hdrname] = sim_imagecheckheader(fimages);
+%
+headerinfo        = [];
+if isempty(hdrname)==0
+    headerinfo = hdrname;
+    headertype = 'hdr';
+end
+if isempty(rscname)==0
+   headerinfo = rscname;
+   headertype = 'rsc';
+end
+if isempty(headerinfo)==0
+   mroi = sar_header2roi(headerinfo,headertype);
+   if nargin <3 || isempty(roi)
+       roi = mroi;
+   end
+   %
+   %
+   if isempty(rscname)
+       sar_hdr2rsc(hdrname,[fimages,'.rsc']);
+   end
+   %
+   [data,~,~,info] = sim_defreadroi(fimages,format,1,0,roi);
+   %
+   sim_roi2ENVI(data,info,'FTEST.img','TEMP');
+   mroi       = sar_header2roi('FTEST.img.rsc','rsc');
+   %
+   mregion    = ['-R' num2str(mroi(1)),'/',num2str(mroi(1)+(info.width-1)*info.x_step),'/',num2str(mroi(3)),'/',...
+                 num2str(mroi(3)+(info.file_length-1)*abs(info.y_step))];
+   ps         = ['-I' num2str(info.x_step),'/',num2str(abs(info.y_step))];
+   %
+   switch upper(format)
+       case 'FLOAT'
+           outformat = '-Zf';
+       case 'INTEGER'
+           outformat = '-Zh';
+   end
+   strcommand = ['xyz2grd FTEST.img -G' outname ' ', ps, ' ',mregion, ' ',outformat];
+   disp(strcommand);
+   system(strcommand);
+   delete FTEST.img*
+   % 
+else
+    disp('There is not any proper header file found... ');
+   return
+end

@@ -1,0 +1,53 @@
+function gmt_grdmask(inoksar,varargin)
+%
+% Create a mask file to mask fault out
+% a first version is worked for fault model in oksar format...
+%
+% Fault Slip Model...
+% 
+% Developed by Feng, W.P., @ Yj, 2015-05-12
+%
+%
+inputtype  = 'oksar';
+gmt_outgrd = 'mask.grd';
+gmt_mregion= [];
+gmt_xsize  = 1;
+gmt_ysize  = 1;
+
+%
+for ni = 1:2:numel(varargin)
+    par = varargin{ni};
+    val = varargin{ni+1};
+    eval([par,'=val;']);
+end
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%
+switch upper(inputtype)
+    case 'OKSAR'
+        fpara     = sim_oksar2SIM(inoksar);
+        [xul,yul] = sim_fpara2corners(fpara,'ul');
+        [xur,yur] = sim_fpara2corners(fpara,'ur');
+        [xlr,ylr] = sim_fpara2corners(fpara,'ll');
+        [xll,yll] = sim_fpara2corners(fpara,'lr');
+        %
+        x         = [xul,xur,xlr,xll,xul];
+        y         = [yul,yur,ylr,yll,yul];
+        zone      = sim_oksar2utm(oksar);
+        [lat,lon] = utm2deg(x.*1000,y.*1000,zone);
+        %
+        inxy      = '_tmp.inp';
+        %
+        fid = fopen(inxy,'w');
+        fprintf(fid,'%f %f\n',[lon(:),lat(:)]');
+        fclose(fid);
+        %
+    otherwise
+        inxy      = inoksar;
+end
+data = load(inxy);
+if isempty(gmt_mregion)
+    
+%
+grdmaskexecu = ['grdmask ',inxy,' ',
+
+
